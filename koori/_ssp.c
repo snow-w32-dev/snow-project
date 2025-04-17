@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 #include <stdio.h>
 
 __attribute__((noreturn)) void

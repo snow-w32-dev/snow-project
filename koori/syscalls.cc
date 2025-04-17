@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 #define  WIN32_LEAN_AND_MEAN
 #include <linux/errno.h>
 #include <linux/unistd.h>
