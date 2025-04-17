@@ -1,10 +1,12 @@
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
 #define AUTOCLO		__attribute__((cleanup(fd_exit)))
 #define AUTOFCLO	__attribute__((cleanup(fp_exit)))
+#define AUTOFREE	__attribute__((cleanup(ptr_exit)))
 
 static void
 fd_exit (int *x)
@@ -32,9 +34,28 @@ fp_exit (FILE **x)
     perror ("fclose");
 }
 
+static void
+ptr_exit (void **x)
+{
+  void *ptr;
+
+  ptr = *x;
+  if (!ptr)
+    return;
+
+  free (ptr);
+}
+
 static int
 do_gen_code (FILE *fp, FILE *fp2)
 {
+#define BUF_SIZE	64
+
+  char *line;
+  AUTOFREE void *buf = NULL;
+  size_t n = BUF_SIZE;
+  char *nlpos;
+
 #define try_write(s, ...)				\
 	if (fprintf (fp2, s, ##__VA_ARGS__) < 0)	\
 		return -1;
@@ -43,6 +64,25 @@ do_gen_code (FILE *fp, FILE *fp2)
             "#error unsupported architecture\n"
             "#endif\n");
   try_write(".text\n");
+
+  line = buf = malloc (BUF_SIZE);
+  if (!buf)
+  {
+    perror ("malloc");
+    return -1;
+  }
+
+  while (getline (&line, &n, fp) != EOF)
+  {
+    nlpos = strchr (line, '\n');
+    if (nlpos)
+      *nlpos = '\0';
+
+    try_write(".globl \"%s\"\n", line);
+    try_write(".hidden \"%s\"\n", line);
+    try_write(".type \"%s\", @function\n", line);
+    try_write("\"%s\":\n", line);
+  }
 
   return 0;
 }
