@@ -1,6 +1,7 @@
 #define  WIN32_LEAN_AND_MEAN
 #include <linux/errno.h>
 #include <linux/unistd.h>
+#include <stdio.h>
 #include <windows.h>
 #include <winternl.h>
 
@@ -27,14 +28,20 @@ _snow_dispatch_syscall(long nr,
 {
   long (*syscall) (long, long, long, long, long, long);
 
-  if (nr < 0
-      || (size_t)nr >= sizeof(syscalls) / sizeof(syscalls[0]))
+  if (nr < 0)
 illegal_num:
     return -ENOSYS;
 
+  if ((size_t)nr >= sizeof(syscalls) / sizeof(syscalls[0]))
+  {
+missing_syscall:
+    fprintf (stderr, "unimplemented syscall %ld\n", nr);
+    goto illegal_num;
+  }
+
   syscall = syscalls[nr];
   if (!syscall)
-    goto illegal_num;
+    goto missing_syscall;
 
   return syscall (a0, a1, a2, a3, a4, a5);
 }
@@ -53,29 +60,45 @@ _snow_init_layer (void)
 
   hK32 = GetModuleHandle("kernel32.dll");
   if (!hK32)
+  {
+    fprintf (stderr, "can't get k32, err=%lu\n", GetLastError ());
     return -1;
+  }
 
   iswow64proc2 = (typeof(iswow64proc2))(void *)GetProcAddress (hK32, "IsWow64Process2");
   if (iswow64proc2)
   {
     if (iswow64proc2 (hProc, &mach_proc, &mach_native) == 0)
+    {
+iswow64_failed:
+      fprintf (stderr, "wow64 chk failed, err=%lu\n", GetLastError ());
       return -1;
+    }
 
     if (mach_proc != mach_native)
+    {
+      fprintf (stderr, "arch mismatch, ldr=%hu, cpu=%hu\n", mach_proc, mach_native);
       return -1;
+    }
   }
   else
   {
     if (IsWow64Process (hProc, &iswow64) == 0)
-      return -1;
+      goto iswow64_failed;
 
     if (iswow64)
+    {
+      fprintf (stderr, "under wow64 ss, abort.\n");
       return -1;
+    }
   }
 
   teb = NtCurrentTeb();
   if (teb->WOW32Reserved)
+  {
+    fprintf (stderr, "nonzero fastsyscall before init\n");
     return -1;
+  }
 
   teb->WOW32Reserved = (void *)_snow_handle_syscall;
 
