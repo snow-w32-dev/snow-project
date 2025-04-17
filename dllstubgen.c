@@ -1,4 +1,5 @@
 #include <fcntl.h>
+#include <libgen.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -119,6 +120,9 @@ die_usage:
     perror ("open");
     return 1;
   }
+
+  pathname = basename (pathname);
+  n = strlen (pathname);
 
   memcpy (pathname + n - 4, ".S", 3);
   fd2 = open (pathname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
