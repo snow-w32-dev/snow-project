@@ -1,0 +1,2 @@
+__acrt_iob_func
+__stdio_common_vfprintf
