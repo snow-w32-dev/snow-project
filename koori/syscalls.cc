@@ -1,12 +1,24 @@
 #define  WIN32_LEAN_AND_MEAN
 #include <linux/errno.h>
+#include <linux/unistd.h>
 #include <windows.h>
 #include <winternl.h>
+
+#define SYSCALL_IMPLED(name)								\
+	[__NR_##name] = [] (void) constexpr {						\
+		long									\
+		sys_##name (long, long, long, long, long, long) asm("sys_" #name);	\
+											\
+		return &sys_##name;							\
+	} ()
 
 extern "C" void
 _snow_handle_syscall (void);
 
 static long (*syscalls[]) (long, long, long, long, long, long) = {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wc99-designator"
+#pragma clang diagnostic pop
 };
 
 extern "C" long
