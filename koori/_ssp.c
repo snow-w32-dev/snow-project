@@ -1,6 +1,10 @@
+#include <stdio.h>
+
 __attribute__((noreturn)) void
 __stack_chk_fail (void)
 {
+  fprintf (stderr, "stkchk failure\n");
+
   for (; ; )
     ;
 }
