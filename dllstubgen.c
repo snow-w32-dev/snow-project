@@ -47,7 +47,7 @@ ptr_exit (void **x)
 }
 
 static int
-do_gen_code (FILE *fp, FILE *fp2)
+do_gen_code (FILE *fp, FILE *fp2, FILE *fp3)
 {
 #define BUF_SIZE	64
 
@@ -56,14 +56,14 @@ do_gen_code (FILE *fp, FILE *fp2)
   size_t n = BUF_SIZE;
   char *nlpos;
 
-#define try_write(s, ...)				\
+#define try_write_asm(s, ...)				\
 	if (fprintf (fp2, s, ##__VA_ARGS__) < 0)	\
 		return -1;
 
-  try_write("#ifndef __i386__\n"
-            "#error unsupported architecture\n"
-            "#endif\n");
-  try_write(".text\n");
+  try_write_asm("#ifndef __i386__\n"
+                "#error unsupported architecture\n"
+                "#endif\n");
+  try_write_asm(".text\n");
 
   line = buf = malloc (BUF_SIZE);
   if (!buf)
@@ -78,10 +78,10 @@ do_gen_code (FILE *fp, FILE *fp2)
     if (nlpos)
       *nlpos = '\0';
 
-    try_write(".globl \"%s\"\n", line);
-    try_write(".hidden \"%s\"\n", line);
-    try_write(".type \"%s\", @function\n", line);
-    try_write("\"%s\":\n", line);
+    try_write_asm(".globl \"%s\"\n", line);
+    try_write_asm(".hidden \"%s\"\n", line);
+    try_write_asm(".type \"%s\", @function\n", line);
+    try_write_asm("\"%s\":\n", line);
   }
 
   return 0;
@@ -90,8 +90,8 @@ do_gen_code (FILE *fp, FILE *fp2)
 int
 main (int argc, char *argv[])
 {
-  AUTOCLO int fd = -1, fd2 = -1;
-  AUTOFCLO FILE *fp = NULL, *fp2 = NULL;
+  AUTOCLO int fd = -1, fd2 = -1, fd3 = -1;
+  AUTOFCLO FILE *fp = NULL, *fp2 = NULL, *fp3 = NULL;
   size_t n;
   int res = 0;
 
@@ -124,10 +124,16 @@ die_usage:
   fd2 = open (pathname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
   if (fd2 < 0)
   {
+open_failed:
     fprintf (stderr, "cannot open output file\n");
     perror ("open");
     return 1;
   }
+
+  memcpy (pathname + n - 4, ".c", 3);
+  fd3 = open (pathname, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+  if (fd3 < 0)
+    goto open_failed;
 
   fp = fdopen (fd, "r");
   if (!fp)
@@ -143,7 +149,12 @@ fdopen_failed:
     goto fdopen_failed;
   fd2 = -1;
 
-  if (do_gen_code (fp, fp2) < 0)
+  fp3 = fdopen (fd3, "w");
+  if (!fp3)
+    goto fdopen_failed;
+  fd3 = -1;
+
+  if (do_gen_code (fp, fp2, fp3) < 0)
   {
     fprintf (stderr, "error occurred while writing output\n");
     res = 1;
@@ -162,6 +173,13 @@ fdopen_failed:
     res = 1;
   }
   fp2 = NULL;
+
+  if (fclose (fp3) < 0)
+  {
+    perror ("fclose");
+    res = 1;
+  }
+  fp3 = NULL;
 
   return res;
 }
