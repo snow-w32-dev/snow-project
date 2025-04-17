@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
+
 #ifndef    KOORI_SYSCALLS_H
 #define    KOORI_SYSCALLS_H
 
