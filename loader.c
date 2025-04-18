@@ -39,11 +39,20 @@ unload_dlls (void)
 }
 
 WINAPI static void *
-snow_lookup_w32_sym (const char *dll, const char *name)
+snow_lookup_w32_sym (const char *dll, size_t n, const char *name, size_t n2)
 {
   HMODULE h;
   void *res;
   struct loaded_dll *node;
+
+  if (!dll || !name)
+    return NULL;
+
+  if (IsBadReadPtr (dll, n + 1) || IsBadReadPtr (name, n2 + 1))
+    return NULL;
+
+  if (dll[n] != '\0' || name[n2] != '\0')
+    return NULL;
 
   h = GetModuleHandle(dll);
   if (!h)
