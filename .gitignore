@@ -1,0 +1,16 @@
+*.o
+*.elf
+*.exe
+*.a
+dllstubgen
+kernel32.S
+kernel32.c
+ucrtbase.S
+ucrtbase.c
+
+.cache/
+compile_commands.json
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
