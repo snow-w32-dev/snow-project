@@ -52,11 +52,9 @@ ptr_exit (void **x)
 static int
 do_gen_code (FILE *fp, FILE *fp2, FILE *fp3)
 {
-#define BUF_SIZE	64
-
   char *line;
   AUTOFREE void *buf = NULL;
-  size_t n = BUF_SIZE;
+  size_t n;
   char *nlpos;
 
 #define try_write_asm(s, ...)				\
@@ -68,7 +66,7 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3)
                 "#endif\n");
   try_write_asm(".text\n");
 
-  line = buf = malloc (BUF_SIZE);
+  line = buf = malloc (n = 64);
   if (!buf)
   {
     perror ("malloc");
