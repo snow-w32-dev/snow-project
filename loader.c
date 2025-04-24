@@ -50,7 +50,7 @@ mutex_exit (pthread_mutex_t **x)
   assert(pthread_mutex_unlock (mutex) == 0);
 }
 
-static int
+static inline int
 unload_dlls (void)
 {
   struct loaded_dll *i, *next;
@@ -118,7 +118,7 @@ static struct snow_info_blk early_sib = {
   .lookup_w32_sym = &snow_lookup_w32_sym
 };
 
-static int
+static inline int
 init_early_sib (void)
 {
   void **sib_location;
