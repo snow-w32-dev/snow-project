@@ -45,9 +45,6 @@ snow_lookup_w32_sym (const char *dll, size_t n, const char *name, size_t n2)
   void *res;
   struct loaded_dll *node;
 
-  if (!dll || !name)
-    return NULL;
-
   if (IsBadReadPtr (dll, n + 1) || IsBadReadPtr (name, n2 + 1))
     return NULL;
 
