@@ -11,6 +11,10 @@
 
 #include "sib.h"
 
+#ifdef __i386__
+#define SIB_LOCATION(teb)	&teb->Reserved1[7]
+#endif
+
 struct loaded_dll
 {
   HMODULE h;
@@ -90,19 +94,16 @@ static struct snow_info_blk early_sib = {
 static int
 init_early_sib (void)
 {
-  TEB *teb;
+  void **sib_location;
 
-  teb = NtCurrentTeb();
-
-#define sib_location()		teb->Reserved1[7]
-
-  if (sib_location())
+  sib_location = SIB_LOCATION(NtCurrentTeb());
+  if (*sib_location)
   {
     fprintf (stderr, "env ptr nonzero before init\n");
     return -1;
   }
 
-  sib_location() = &early_sib;
+  *sib_location = &early_sib;
 
   return 0;
 }

@@ -15,6 +15,10 @@
 		return &sys_##name;							\
 	} ()
 
+#ifdef __i386__
+#define FASTSYSCALL_LOCATION(teb)	&teb->WOW32Reserved
+#endif
+
 extern "C" void
 _snow_handle_syscall (void);
 
@@ -56,7 +60,7 @@ _snow_init_layer (void)
   typeof(IsWow64Process2) *iswow64proc2;
   unsigned short mach_proc, mach_native;
   BOOL iswow64;
-  TEB *teb;
+  void **fastsyscall_location;
 
   hProc = GetCurrentProcess ();
 
@@ -95,14 +99,14 @@ iswow64_failed:
     }
   }
 
-  teb = NtCurrentTeb();
-  if (teb->WOW32Reserved)
+  fastsyscall_location = FASTSYSCALL_LOCATION(NtCurrentTeb());
+  if (*fastsyscall_location)
   {
-    fprintf (stderr, "nonzero fastsyscall before init\n");
+    fprintf (stderr, "nonzero gate ptr before init\n");
     return -1;
   }
 
-  teb->WOW32Reserved = (void *)_snow_handle_syscall;
+  *fastsyscall_location = (void *)_snow_handle_syscall;
 
   return 0;
 }
