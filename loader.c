@@ -11,9 +11,23 @@
 
 #include "sib.h"
 
+#define AUTOUNLOCK	__attribute__((cleanup(mutex_exit)))
+
 #ifdef __i386__
 #define SIB_LOCATION(teb)	&teb->Reserved1[7]
 #endif
+
+#define ACQUIRE_LOCK(x)					\
+({							\
+	assert(pthread_mutex_lock (x) == 0);		\
+	x;						\
+})
+
+#define RELEASE_LOCK(x)					\
+({							\
+	assert(pthread_mutex_unlock (x) == 0);		\
+	NULL;						\
+})
 
 struct loaded_dll
 {
@@ -23,6 +37,18 @@ struct loaded_dll
 
 static struct loaded_dll *loaded_dlls = NULL;
 static pthread_mutex_t lck = PTHREAD_MUTEX_INITIALIZER;
+
+static inline void
+mutex_exit (pthread_mutex_t **x)
+{
+  pthread_mutex_t *mutex;
+
+  mutex = *x;
+  if (!mutex)
+    return;
+
+  assert(pthread_mutex_unlock (mutex) == 0);
+}
 
 static int
 unload_dlls (void)
@@ -45,6 +71,7 @@ unload_dlls (void)
 WINAPI static void *
 snow_lookup_w32_sym (const char *dll, size_t n, const char *name, size_t n2)
 {
+  AUTOUNLOCK pthread_mutex_t *mutex = NULL;
   HMODULE h;
   void *res;
   struct loaded_dll *node;
@@ -55,6 +82,7 @@ snow_lookup_w32_sym (const char *dll, size_t n, const char *name, size_t n2)
   if (dll[n] != '\0' || name[n2] != '\0')
     return NULL;
 
+  mutex = ACQUIRE_LOCK(&lck);
   h = GetModuleHandle(dll);
   if (!h)
   {
@@ -74,11 +102,10 @@ snow_lookup_w32_sym (const char *dll, size_t n, const char *name, size_t n2)
     }
 
     node->h = h;
-    assert(pthread_mutex_lock (&lck) == 0);
     node->next = loaded_dlls;
     loaded_dlls = node;
-    assert(pthread_mutex_unlock (&lck) == 0);
   }
+  mutex = RELEASE_LOCK(&lck);
 
   res = (void *)GetProcAddress (h, name);
   if (!res)
