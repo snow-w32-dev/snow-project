@@ -149,34 +149,37 @@ load_and_run_koori_img (void)
   int fd;
   struct stat st;
   int res;
-  static char buf[0x1000];
-  struct {
-    char mgc[4];
-    unsigned char bits;
-    unsigned char endian;
-    char pad[10];
-#ifdef __i386__
-    unsigned short pad1;
-    unsigned short arch;
-    void *pad2;
-#endif
-    int (*entry)(void) WINAPI;
+  static union
+  {
+    char raw[0x1000];
     struct {
-      size_t kind;
-      char *data_ptr;
-      size_t addr;
-      size_t pad;
-      size_t data_len;
-      size_t size;
-      size_t pad2[2];
-    } *phdr;
+      char mgc[4];
+      unsigned char bits;
+      unsigned char endian;
+      char pad[10];
 #ifdef __i386__
-    size_t pad3;
-    void *pad4;
-    unsigned short pad5[2];
-    unsigned short num_segs;
+      unsigned short pad1;
+      unsigned short arch;
+      void *pad2;
 #endif
-  } *hdr;
+      int (*entry)(void) WINAPI;
+      struct {
+        size_t kind;
+        char *data_ptr;
+        size_t addr;
+        size_t pad;
+        size_t data_len;
+        size_t size;
+        size_t pad2[2];
+      } *phdr;
+#ifdef __i386__
+      size_t pad3;
+      void *pad4;
+      unsigned short pad5[2];
+      unsigned short num_segs;
+#endif
+    } hdr;
+  } buf;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
   if (fd < 0)
@@ -192,18 +195,16 @@ load_and_run_koori_img (void)
     goto quit_close_fd;
   }
 
-  assert(st.st_size <= sizeof(buf));
+  assert(st.st_size <= sizeof(buf.raw));
 
-  if (read (fd, buf, st.st_size) != st.st_size)
+  if (read (fd, buf.raw, st.st_size) != st.st_size)
   {
     fprintf (stderr, "read koori img failed, errno=%d\n", errno);
     res = -1;
     goto quit_close_fd;
   }
 
-  hdr = (void *)buf;
-
-  if (memcmp (hdr->mgc, "\177ELF", 4))
+  if (memcmp (buf.hdr.mgc, "\177ELF", 4))
   {
     fprintf (stderr, "koori img is not elf\n");
     res = -1;
@@ -211,21 +212,21 @@ load_and_run_koori_img (void)
   }
 
 #ifdef __i386__
-  if (hdr->bits != 1)  // ELFCLASS32
+  if (buf.hdr.bits != 1)  // ELFCLASS32
   {
     fprintf (stderr, "koori img isn't elf32\n");
     res = -1;
     goto quit_close_fd;
   }
 
-  if (hdr->endian != 1)  // ELFDATA2LSB
+  if (buf.hdr.endian != 1)  // ELFDATA2LSB
   {
     fprintf (stderr, "koori img isn't in LE\n");
     res = -1;
     goto quit_close_fd;
   }
 
-  if (hdr->arch != 3)  // EM_386
+  if (buf.hdr.arch != 3)  // EM_386
   {
     fprintf (stderr, "koori img isn't for i386\n");
     res = -1;
