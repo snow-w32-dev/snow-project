@@ -8,6 +8,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <windows.h>
@@ -149,6 +150,9 @@ load_and_run_koori_img (void)
   struct stat st;
   int res;
   static char buf[0x1000];
+  struct {
+    char mgc[4];
+  } *hdr;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
   if (fd < 0)
@@ -169,6 +173,15 @@ load_and_run_koori_img (void)
   if (read (fd, buf, st.st_size) != st.st_size)
   {
     fprintf (stderr, "read koori img failed, errno=%d\n", errno);
+    res = -1;
+    goto quit_close_fd;
+  }
+
+  hdr = (void *)buf;
+
+  if (memcmp (hdr->mgc, "\177ELF", 4))
+  {
+    fprintf (stderr, "koori img is not elf\n");
     res = -1;
     goto quit_close_fd;
   }
