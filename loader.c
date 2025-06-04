@@ -152,6 +152,13 @@ load_and_run_koori_img (void)
   static char buf[0x1000];
   struct {
     char mgc[4];
+    unsigned char bits;
+    unsigned char endian;
+    char pad[10];
+#ifdef __i386__
+    unsigned short pad1;
+    unsigned short arch;
+#endif
   } *hdr;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
@@ -185,6 +192,31 @@ load_and_run_koori_img (void)
     res = -1;
     goto quit_close_fd;
   }
+
+#ifdef __i386__
+  if (hdr->bits != 1)  // ELFCLASS32
+  {
+    fprintf (stderr, "koori img isn't elf32\n");
+    res = -1;
+    goto quit_close_fd;
+  }
+
+  if (hdr->endian != 1)  // ELFDATA2LSB
+  {
+    fprintf (stderr, "koori img isn't in LE\n");
+    res = -1;
+    goto quit_close_fd;
+  }
+
+  if (hdr->arch != 3)  // EM_386
+  {
+    fprintf (stderr, "koori img isn't for i386\n");
+    res = -1;
+    goto quit_close_fd;
+  }
+#else
+#error i dont understand your architecture yet
+#endif
 
   res = 0;
 
