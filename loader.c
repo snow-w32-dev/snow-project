@@ -158,6 +158,23 @@ load_and_run_koori_img (void)
 #ifdef __i386__
     unsigned short pad1;
     unsigned short arch;
+    void *pad2;
+#endif
+    int (*entry)(void) WINAPI;
+    struct {
+      size_t kind;
+      char *data_ptr;
+      size_t addr;
+      size_t pad;
+      size_t data_len;
+      size_t size;
+      size_t pad2[2];
+    } *phdr;
+#ifdef __i386__
+    size_t pad3;
+    void *pad4;
+    unsigned short pad5[2];
+    unsigned short num_segs;
 #endif
   } *hdr;
 
