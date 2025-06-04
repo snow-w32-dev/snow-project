@@ -165,16 +165,20 @@ load_and_run_koori_img (void)
       void *pad2;
 #endif
       int (*entry)(void) WINAPI;
-      struct
+      union
       {
-        size_t kind;
-        char *data_ptr;
-        size_t addr;
-        size_t pad;
-        size_t data_len;
-        size_t size;
-        size_t pad2[2];
-      } *phdr;
+        char *bare;
+        struct
+        {
+          size_t kind;
+          char *data_ptr;
+          size_t addr;
+          size_t pad;
+          size_t data_len;
+          size_t size;
+          size_t pad2[2];
+        } *fields;
+      } phdr;
 #ifdef __i386__
       size_t pad3;
       void *pad4;
@@ -238,6 +242,8 @@ load_and_run_koori_img (void)
 #else
 #error i dont understand your architecture yet
 #endif
+
+  buf.hdr.phdr.bare += (size_t)buf.raw;
 
   res = 0;
 
