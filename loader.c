@@ -198,6 +198,7 @@ load_and_run_koori_img (void)
   size_t first_pt_load_addr;
   size_t relative_seg_addr;
   size_t seg_size;
+  size_t data_len;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
   if (fd < 0)
@@ -283,6 +284,23 @@ load_and_run_koori_img (void)
       seg_size = buf.hdr.phdr.fields->size;
 
       assert(relative_seg_addr + seg_size <= KOORI_IMG_INTERNAL_ROOM);
+
+      relative_seg_addr += (size_t)base;
+
+      if (VirtualAlloc ((void *)relative_seg_addr, seg_size,
+                        MEM_COMMIT, PAGE_READWRITE) == NULL)
+      {
+        fprintf (stderr, "can't commit koori seg, err=%lu\n", GetLastError ());
+        res = -1;
+        goto quit_cleanup;
+      }
+
+      data_len = buf.hdr.phdr.fields->data_len;
+      if (data_len)
+      {
+        buf.hdr.phdr.fields->data_ptr += (size_t)buf.raw;
+        memcpy ((void *)relative_seg_addr, buf.hdr.phdr.fields->data_ptr, data_len);
+      }
     }
 
     buf.hdr.phdr.fields++;
