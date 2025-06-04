@@ -4,9 +4,12 @@
 #undef   NDEBUG
 #include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include <windows.h>
 #include <winternl.h>
 
@@ -29,6 +32,8 @@
 	assert(pthread_mutex_unlock (x) == 0);		\
 	NULL;						\
 })
+
+#define KOORI_IMG_NAME	"koori.elf"
 
 struct loaded_dll
 {
@@ -137,6 +142,45 @@ init_early_sib (void)
   return 0;
 }
 
+static inline int
+load_and_run_koori_img (void)
+{
+  int fd;
+  struct stat st;
+  int res;
+  static char buf[0x1000];
+
+  fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
+  if (fd < 0)
+  {
+    fprintf (stderr, "open koori img failed, errno=%d\n", errno);
+    return -1;
+  }
+
+  if (fstat (fd, &st) < 0)
+  {
+    fprintf (stderr, "get koori img size failed, errno=%d\n", errno);
+    res = -1;
+    goto quit_close_fd;
+  }
+
+  assert(st.st_size <= sizeof(buf));
+
+  if (read (fd, buf, st.st_size) != st.st_size)
+  {
+    fprintf (stderr, "read koori img failed, errno=%d\n", errno);
+    res = -1;
+    goto quit_close_fd;
+  }
+
+  res = 0;
+
+quit_close_fd:
+  close (fd);
+
+  return res;
+}
+
 int
 main ()
 {
@@ -148,6 +192,9 @@ main ()
     fprintf (stderr, "atexit failed\n");
     return 1;
   }
+
+  if (load_and_run_koori_img () < 0)
+    return 1;
 
   return 0;
 }
