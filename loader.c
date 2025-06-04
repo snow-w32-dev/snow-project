@@ -35,7 +35,9 @@
 	NULL;						\
 })
 
-#define KOORI_IMG_NAME	"koori.elf"
+#define KOORI_IMG_NAME			"koori.elf"
+#define KOORI_IMG_MAX_BYTES		0x1000
+#define KOORI_IMG_INTERNAL_ROOM		0x40000
 
 struct loaded_dll
 {
@@ -152,7 +154,7 @@ load_and_run_koori_img (void)
   int res;
   static union
   {
-    char raw[0x1000];
+    char raw[KOORI_IMG_MAX_BYTES];
     struct
     {
       char mgc[4];
@@ -246,7 +248,7 @@ load_and_run_koori_img (void)
 
   buf.hdr.phdr.bare += (size_t)buf.raw;
 
-  base = VirtualAlloc (NULL, 0x40000, MEM_RESERVE, PAGE_NOACCESS);
+  base = VirtualAlloc (NULL, KOORI_IMG_INTERNAL_ROOM, MEM_RESERVE, PAGE_NOACCESS);
   if (!base)
   {
     fprintf (stderr, "can't alloc koori addr spc, err=%lu\n", GetLastError ());
