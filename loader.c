@@ -190,6 +190,10 @@ load_and_run_koori_img (void)
     } hdr;
   } buf;
   void *base;
+  int found_1st_pt_load;
+  size_t first_pt_load_addr;
+  size_t relative_seg_addr;
+  size_t seg_size;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
   if (fd < 0)
@@ -254,6 +258,31 @@ load_and_run_koori_img (void)
     fprintf (stderr, "can't alloc koori addr spc, err=%lu\n", GetLastError ());
     res = -1;
     goto quit_close_fd;
+  }
+
+  found_1st_pt_load = 0;
+
+  for (; ; )
+  {
+    if (!buf.hdr.num_segs)
+      break;
+
+    if (buf.hdr.phdr.fields->kind == 1)  // PT_LOAD
+    {
+      if (!found_1st_pt_load)
+      {
+        first_pt_load_addr = buf.hdr.phdr.fields->addr;
+        found_1st_pt_load = 1;
+      }
+
+      relative_seg_addr = buf.hdr.phdr.fields->addr - first_pt_load_addr;
+      seg_size = buf.hdr.phdr.fields->size;
+
+      assert(relative_seg_addr + seg_size <= KOORI_IMG_INTERNAL_ROOM);
+    }
+
+    buf.hdr.phdr.fields++;
+    buf.hdr.num_segs--;
   }
 
   res = 0;
