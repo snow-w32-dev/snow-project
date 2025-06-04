@@ -52,7 +52,7 @@ missing_syscall:
   return syscall (a0, a1, a2, a3, a4, a5);
 }
 
-extern "C" __attribute__((visibility("default"))) int
+extern "C" __attribute__((visibility("default"))) WINAPI int
 _snow_init_layer (void)
 {
   HANDLE hProc;
