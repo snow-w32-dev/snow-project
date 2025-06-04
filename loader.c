@@ -152,7 +152,8 @@ load_and_run_koori_img (void)
   static union
   {
     char raw[0x1000];
-    struct {
+    struct
+    {
       char mgc[4];
       unsigned char bits;
       unsigned char endian;
@@ -163,7 +164,8 @@ load_and_run_koori_img (void)
       void *pad2;
 #endif
       int (*entry)(void) WINAPI;
-      struct {
+      struct
+      {
         size_t kind;
         char *data_ptr;
         size_t addr;

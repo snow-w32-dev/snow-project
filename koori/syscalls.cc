@@ -8,7 +8,8 @@
 #include <winternl.h>
 
 #define SYSCALL_IMPLED(name)								\
-	[__NR_##name] = [] (void) constexpr {						\
+	[__NR_##name] = [] (void) constexpr						\
+	{										\
 		long									\
 		sys_##name (long, long, long, long, long, long) asm("sys_" #name);	\
 											\
