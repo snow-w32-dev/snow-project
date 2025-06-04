@@ -166,7 +166,11 @@ load_and_run_koori_img (void)
       unsigned short arch;
       void *pad2;
 #endif
-      int (*entry)(void) WINAPI;
+      union
+      {
+        char *bare;
+        int (*fn)(void) WINAPI;
+      } entry;
       union
       {
         char *bare;
@@ -284,6 +288,8 @@ load_and_run_koori_img (void)
     buf.hdr.phdr.fields++;
     buf.hdr.num_segs--;
   }
+
+  buf.hdr.entry.bare += (size_t)base - first_pt_load_addr;
 
   res = 0;
 
