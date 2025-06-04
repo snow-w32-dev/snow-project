@@ -187,6 +187,7 @@ load_and_run_koori_img (void)
 #endif
     } hdr;
   } buf;
+  void *base;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
   if (fd < 0)
@@ -245,7 +246,19 @@ load_and_run_koori_img (void)
 
   buf.hdr.phdr.bare += (size_t)buf.raw;
 
+  base = VirtualAlloc (NULL, 0x40000, MEM_RESERVE, PAGE_NOACCESS);
+  if (!base)
+  {
+    fprintf (stderr, "can't alloc koori addr spc, err=%lu\n", GetLastError ());
+    res = -1;
+    goto quit_close_fd;
+  }
+
   res = 0;
+
+quit_cleanup:
+  if (VirtualFree (base, 0, MEM_RELEASE) == 0)
+   fprintf (stderr, "can't free koori addr spc, err=%lu\n", GetLastError ());
 
 quit_close_fd:
   close (fd);
