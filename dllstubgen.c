@@ -71,6 +71,10 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
                 "#endif\n");
   try_write_asm(".text\n");
 
+  try_write_c("#define  WIN32_LEAN_AND_MEAN\n");
+  try_write_c("#include <windows.h>\n");
+  try_write_c("#include <winternl.h>\n");
+  try_write_c("#include \"sib.h\"\n");
   try_write_c("static const char dllname[] = {\"%s\"};\n", dll_name);
 
   line = buf = malloc (n = 64);
@@ -88,11 +92,20 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
       *nlpos = '\0';
 
     try_write_c("static const char sym_name%zu[] = {\"%s\"};\n", idx, line);
+    try_write_c("void *\n"
+                "__lookup_%s (void)\n"
+                "{\n"
+                "  return ((struct snow_info_blk *)(NtCurrentTeb()->EnvironmentPointer))->lookup_w32_sym(\n"
+                "    dllname, sizeof(dllname) - 1, sym_name%zu, sizeof(sym_name%zu) - 1\n"
+                "  );\n"
+                "};\n", line, idx, idx);
 
     try_write_asm(".globl %s\n", line);
     try_write_asm(".hidden %s\n", line);
     try_write_asm(".type %s, @function\n", line);
     try_write_asm("%s:\n", line);
+    try_write_asm("\tcall\t__lookup_%s\n", line);
+    try_write_asm("\tjmp\t*%%eax\n");
 
     idx++;
   }
