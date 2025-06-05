@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <libgen.h>
 #include <stdio.h>
@@ -141,8 +142,7 @@ die_usage:
   fd = open (pathname, O_RDONLY);
   if (fd < 0)
   {
-    fprintf (stderr, "cannot open input file\n");
-    perror ("open");
+    fprintf (stderr, "cannot open input file: %s\n", strerror (errno));
     return 1;
   }
 
@@ -154,8 +154,7 @@ die_usage:
   if (fd2 < 0)
   {
 open_failed:
-    fprintf (stderr, "cannot open output file\n");
-    perror ("open");
+    fprintf (stderr, "cannot open output file: %s\n", strerror (errno));
     return 1;
   }
 
