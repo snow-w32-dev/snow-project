@@ -1,6 +1,6 @@
-cmake_minimum_required()
+cmake_minimum_required(VERSION 3.5...4.0)
 
-project(LANGUAGES C)
+project(SNOW LANGUAGES C)
 
 add_executable(snow
   loader.c)
