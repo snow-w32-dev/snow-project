@@ -182,7 +182,8 @@ load_and_run_koori_img (void)
           size_t pad;
           size_t data_len;
           size_t size;
-          size_t pad2[2];
+          size_t prots;
+          size_t pad2;
         } *fields;
       } phdr;
 #ifdef __i386__
@@ -199,6 +200,8 @@ load_and_run_koori_img (void)
   size_t relative_seg_addr;
   size_t seg_size;
   size_t data_len;
+  DWORD prots;
+  DWORD old_prots;
 
   fd = open (KOORI_IMG_NAME, O_RDONLY | O_BINARY);
   if (fd < 0)
@@ -300,6 +303,23 @@ load_and_run_koori_img (void)
       {
         buf.hdr.phdr.fields->data_ptr += (size_t)buf.raw;
         memcpy ((void *)relative_seg_addr, buf.hdr.phdr.fields->data_ptr, data_len);
+      }
+
+      prots = 0;
+      if (buf.hdr.phdr.fields->prots == 4)  // PF_R
+        prots = PAGE_READONLY;
+      else if (buf.hdr.phdr.fields->prots == 5)  // PF_R | PF_X
+        prots = PAGE_EXECUTE_READ;
+      else
+        assert(buf.hdr.phdr.fields->prots == 6);  // PF_R | PF_W
+
+      if (prots
+          && VirtualProtect ((void *)relative_seg_addr, seg_size,
+                             prots, &old_prots) == 0)
+      {
+        fprintf (stderr, "can't change koori seg prot, err=%lu'\n", GetLastError ());
+        res = -1;
+        goto quit_cleanup;
       }
     }
 
