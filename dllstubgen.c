@@ -50,21 +50,28 @@ ptr_exit (void **x)
 }
 
 static int
-do_gen_code (FILE *fp, FILE *fp2, FILE *fp3)
+do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
 {
   char *line;
   AUTOFREE void *buf = NULL;
   size_t n;
+  size_t idx;
   char *nlpos;
 
 #define try_write_asm(s, ...)				\
 	if (fprintf (fp2, s, ##__VA_ARGS__) < 0)	\
 		return -1;
 
+#define try_write_c(s, ...)				\
+	if (fprintf (fp3, s, ##__VA_ARGS__) < 0)	\
+		return -1;
+
   try_write_asm("#ifndef __i386__\n"
                 "#error unsupported architecture\n"
                 "#endif\n");
   try_write_asm(".text\n");
+
+  try_write_c("static const char dllname[] = {\"%s\"};\n", dll_name);
 
   line = buf = malloc (n = 64);
   if (!buf)
@@ -73,16 +80,21 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3)
     return -1;
   }
 
+  idx = 0;
   while (getline (&line, &n, fp) != EOF)
   {
     nlpos = strchr (line, '\n');
     if (nlpos)
       *nlpos = '\0';
 
+    try_write_c("static const char sym_name%zu[] = {\"%s\"};\n", idx, line);
+
     try_write_asm(".globl \"%s\"\n", line);
     try_write_asm(".hidden \"%s\"\n", line);
     try_write_asm(".type \"%s\", @function\n", line);
     try_write_asm("\"%s\":\n", line);
+
+    idx++;
   }
 
   return 0;
@@ -158,7 +170,8 @@ fdopen_failed:
     goto fdopen_failed;
   fd3 = -1;
 
-  if (do_gen_code (fp, fp2, fp3) < 0)
+  memcpy (pathname + n - 4, ".dll", 5);
+  if (do_gen_code (fp, fp2, fp3, pathname) < 0)
   {
     fprintf (stderr, "error occurred while writing output\n");
     res = 1;
