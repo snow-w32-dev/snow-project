@@ -36,7 +36,7 @@
 })
 
 #define KOORI_IMG_NAME			"koori.elf"
-#define KOORI_IMG_MAX_BYTES		0x1000
+#define KOORI_IMG_MAX_BYTES		0x2000
 #define KOORI_IMG_INTERNAL_ROOM		0x40000
 
 struct loaded_dll
