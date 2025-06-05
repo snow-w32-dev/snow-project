@@ -329,7 +329,7 @@ load_and_run_koori_img (void)
 
   buf.hdr.entry.bare += (size_t)base - first_pt_load_addr;
 
-  res = 0;
+  res = buf.hdr.entry.fn ();
 
 quit_cleanup:
   if (VirtualFree (base, 0, MEM_RELEASE) == 0)
