@@ -89,10 +89,10 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
 
     try_write_c("static const char sym_name%zu[] = {\"%s\"};\n", idx, line);
 
-    try_write_asm(".globl \"%s\"\n", line);
-    try_write_asm(".hidden \"%s\"\n", line);
-    try_write_asm(".type \"%s\", @function\n", line);
-    try_write_asm("\"%s\":\n", line);
+    try_write_asm(".globl %s\n", line);
+    try_write_asm(".hidden %s\n", line);
+    try_write_asm(".type %s, @function\n", line);
+    try_write_asm("%s:\n", line);
 
     idx++;
   }
