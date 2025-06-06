@@ -76,6 +76,7 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
   try_write_c("#include <windows.h>\n");
   try_write_c("#include <winternl.h>\n");
   try_write_c("#include \"sib.h\"\n");
+  try_write_c("#define GET_SIB(teb)\tteb->EnvironmentPointer\n");
   try_write_c("static const char dllname[] = {\"%s\"};\n", dll_name);
 
   line = buf = malloc (n = 64);
@@ -96,7 +97,7 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
     try_write_c("void *\n"
                 "__lookup_%s (void)\n"
                 "{\n"
-                "  return ((struct snow_info_blk *)(NtCurrentTeb()->EnvironmentPointer))->lookup_w32_sym(\n"
+                "  return ((struct snow_info_blk *)(GET_SIB(NtCurrentTeb())))->lookup_w32_sym(\n"
                 "    dllname, sizeof(dllname) - 1, sym_name%zu, sizeof(sym_name%zu) - 1\n"
                 "  );\n"
                 "};\n", line, idx, idx);
