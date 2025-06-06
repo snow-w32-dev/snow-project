@@ -3,6 +3,7 @@
 #define  WIN32_LEAN_AND_MEAN
 #include <linux/errno.h>
 #include <linux/unistd.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <windows.h>
 #include <winternl.h>
@@ -60,7 +61,7 @@ _snow_init_layer (void)
   HMODULE hK32;
   typeof(IsWow64Process2) *iswow64proc2;
   typeof(IsWow64Process) *iswow64proc;
-  unsigned short mach_proc, mach_native;
+  unsigned short mach_wow;
   BOOL iswow64;
   void **fastsyscall_location;
 
@@ -76,16 +77,17 @@ _snow_init_layer (void)
   iswow64proc2 = (typeof(iswow64proc2))(void *)GetProcAddress (hK32, "IsWow64Process2");
   if (iswow64proc2)
   {
-    if (iswow64proc2 (hProc, &mach_proc, &mach_native) == 0)
+    if (iswow64proc2 (hProc, &mach_wow, NULL) == 0)
     {
 iswow64_failed:
       fprintf (stderr, "wow64 chk failed, err=%lu\n", GetLastError ());
       return -1;
     }
 
-    if (mach_proc != mach_native)
+    if (mach_wow != IMAGE_FILE_MACHINE_UNKNOWN)
     {
-      fprintf (stderr, "arch mismatch, ldr=%hu, cpu=%hu\n", mach_proc, mach_native);
+wow64_abort:
+      fprintf (stderr, "under wow64 ss, abort.\n");
       return -1;
     }
   }
@@ -98,10 +100,7 @@ iswow64_failed:
         goto iswow64_failed;
 
       if (iswow64)
-      {
-        fprintf (stderr, "under wow64 ss, abort.\n");
-        return -1;
-      }
+        goto wow64_abort;
     }
   }
 
