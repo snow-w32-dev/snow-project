@@ -4,3 +4,5 @@ project(SNOW LANGUAGES C)
 
 add_executable(snow
   loader.c)
+target_link_options(snow PRIVATE
+  -pthread)
