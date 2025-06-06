@@ -1,6 +1,5 @@
 GetCurrentProcess
 GetModuleHandleA
 GetProcAddress
-IsWow64Process
 GetLastError
 ExitProcess

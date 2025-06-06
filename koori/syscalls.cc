@@ -59,6 +59,7 @@ _snow_init_layer (void)
   HANDLE hProc;
   HMODULE hK32;
   typeof(IsWow64Process2) *iswow64proc2;
+  typeof(IsWow64Process) *iswow64proc;
   unsigned short mach_proc, mach_native;
   BOOL iswow64;
   void **fastsyscall_location;
@@ -90,13 +91,17 @@ iswow64_failed:
   }
   else
   {
-    if (IsWow64Process (hProc, &iswow64) == 0)
-      goto iswow64_failed;
-
-    if (iswow64)
+    iswow64proc = (typeof(iswow64proc))(void *)GetProcAddress (hK32, "IsWow64Process");
+    if (iswow64proc)
     {
-      fprintf (stderr, "under wow64 ss, abort.\n");
-      return -1;
+      if (iswow64proc (hProc, &iswow64) == 0)
+        goto iswow64_failed;
+
+      if (iswow64)
+      {
+        fprintf (stderr, "under wow64 ss, abort.\n");
+        return -1;
+      }
     }
   }
 
