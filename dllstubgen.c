@@ -94,7 +94,7 @@ do_gen_code (FILE *fp, FILE *fp2, FILE *fp3, char *dll_name)
       *nlpos = '\0';
 
     try_write_c("static const char sym_name%zu[] = {\"%s\"};\n", idx, line);
-    try_write_c("void *\n"
+    try_write_c("WINAPI void *\n"
                 "__lookup_%s (void)\n"
                 "{\n"
                 "  return ((struct snow_info_blk *)(GET_SIB(NtCurrentTeb())))->lookup_w32_sym(\n"
